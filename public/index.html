@@ -25,6 +25,8 @@
 	<meta name="msapplication-TileImage" content="assets/favicon/ms-icon-144x144.png">
 	<meta name="theme-color" content="#ffffff">
   </head>
+
+
   <body>
     <nav>
       <button id="homenav">Home</button>
@@ -33,17 +35,36 @@
       <button id="guessnav">Guess the result</button>
     </nav>
     <div id="home">
-      
+      <div>Please choose from the three coin flip options:</div>
     </div>    
     <div id="single" class="hidden">
+      <button id="coin">Flip One Coin</button>
+      <!-- A result paragraph-->
+      <p>Result: <span id="singleFlipResult"></span></p>
+      <!-- An image of a US quarter (North Carolina variant) -->
+      <img src="./assets/img/coin.png" id="quarter">
       
     </div>
     <div id="multi" class="hidden">
-      
+      <button id="coin">Flip Many Coins</button>
+      <!--not finished w this one-->
     </div>
+
+
     <div id="guess" class="hidden">
-      
+      <p>Call your heads/tails guess and then flip!</p>
+      <button id = "headsbutt">Heads</button>
+      <button id = "tailsbutt">Tails</button>
+
     </div>
+
+    <div>
+      <p>Guess</p>
+      <img src="./assets/img/coin.png" id="guessIMG" style="width: 100px">
+      <p>Actual Result</p>
+      <img src="./assets/img/coin.png" id="resultIMG" style="width: 100px">
+    </div>
+
 	<script src="main.js"></script>
   </body>
 </html>
