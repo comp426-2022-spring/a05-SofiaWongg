@@ -1,17 +1,13 @@
 // Place your server entry point code here
-const express = require('express');
-const app = express();
-const fs = require('fs');
-const morgan = require('morgan')
-const args = require('minimist')(process.argv.slice(2));
-const db = require("./src/services/database.js")
-const cors = require('cors') //maybe move later after app.use states
 
-// Make Express use its own built-in body parser to handle JSON
-app.use(express.json());
+const args = require('minimist')(process.argv.slice(2));
+
+const cors = require('cors') //maybe move later after app.use states -nu
+
+
 
 // Define coin_routes
-const coin_router = require('./src/routes/coin_routes');
+const coin_router = require('./src/routes/coin_routes'); //-nu
 
 
 
@@ -30,10 +26,81 @@ const help = (`
     --help  Return this message and exit.
 `)
 
+if (args.help || args.h) {
+  console.log(help);
+  process.exit(0);
+}
 
+var express = require('express');
+var app = express();
+const fs = require('fs');
+const morgan = require('morgan')
+const logdb = require("./src/services/database.js")
+
+// Make Express use its own built-in body parser to handle JSON
+app.use(express.json());
+
+// Server port
+const port = args.port || args.p || process.env.PORT || 500
+
+if (args.log == 'false') { //added from profs code
+  console.log("NOTICE: not creating file access.log")
+} else {
+// Use morgan for logging to files
+  const logdir = './log/';
+
+  if (!fs.existsSync(logdir)){
+      fs.mkdirSync(logdir);
+  }
+  // Create a write stream to append to an access.log file
+  const accessLog = fs.createWriteStream( logdir+'access.log', { flags: 'a' })
+  // Set up the access logging middleware
+    app.use(morgan('combined', { stream: accessLog }))
+}
+
+//what i had before
+//if log is true use morgan to log files
+// if (log == true) {
+//   // Create a write stream to append (flags: 'a') to a file
+//   const access_log = fs.createWriteStream('access.log', { flags: 'a' });
+
+//   // Set up the access logging middleware
+//   app.use(morgan('combined', { stream: access_log }));
+// }
+
+//added
+app.use( (req, res, next) => {
+  // adding in database (log)
+  let logdata = {
+      remoteaddr: req.ip,
+      remoteuser: req.user,
+      time: Date.now(),
+      method: req.method,
+      url: req.url,
+      protocol: req.protocol,
+      httpversion: req.httpVersion,
+      status: res.statusCode,
+      referer: req.headers['referer'],
+      useragent: req.headers['user-agent']
+  };
+
+    console.log(logdata);
+
+    const stmt = database.prepare('INSERT INTO accesslog (remoteaddr,remoteuser,time,method,url,protocol,httpversion,status,referer,useragent) VALUES (?,?,?,?,?,?,?,?,?,?)');
+    const run = stmt.run(logdata.remoteaddr,logdata.remoteuser, logdata.time, logdata.method,logdata.url,logdata.protocol,logdata.httpversion, logdata.status,logdata.referer, logdata.useragent);
+    next();
+
+});
 
 // Serve static HTML files
 app.use(express.static('./public'));
+
+//more api endpounts 
+//end of j code
+
+
+
+
 
 // Define debug_routes
 const debug_router = require('./src/routes/debug_route');
@@ -45,38 +112,31 @@ const database = require('./src/middleware/db_middleware');
 const default_response = require('./src/middleware/default_response');
 
 
-
-if (args.help || args.h) {
-    console.log(help);
-    process.exit(0);
-}
-
-args['port', 'debug', 'log', 'help'];
-
-var port = args.port || 5555
-
-
-const debug = args.debug;
-const log = args.log;
-
 //for static html files
 app.use(express.static('./public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 
+
+
+
+
+args['port', 'debug', 'log', 'help'];
+
+
+
+const debug = args.debug;
+const log = args.log;
+
+
+
+
 // Set up cors middleware on all endpoints
 app.use(cors())
 
 
-//if log is true use morgan to log files
-if (log == true) {
-    // Create a write stream to append (flags: 'a') to a file
-    const access_log = fs.createWriteStream('access.log', { flags: 'a' });
 
-    // Set up the access logging middleware
-    app.use(morgan('combined', { stream: access_log }));
-}
 
 // Calling middleware function that inserts a new record in a database.
 app.use(database.log_middlware);
@@ -86,30 +146,7 @@ const server = app.listen(port, () => {
     console.log('App listening on port %PORT%'.replace('%PORT%', port));
 })
 
-//added
-app.use( (req, res, next) => {
-    // Your middleware goes here.
-    let logdata = {
-        remoteaddr: req.ip,
-        remoteuser: req.user,
-        time: Date.now(),
-        method: req.method,
-        url: req.url,
-        protocol: req.protocol,
-        httpversion: req.httpVersion,
-        status: res.statusCode,
-        referer: req.headers['referer'],
-        useragent: req.headers['user-agent']
-    };
 
-    console.log(logdata);
-
-    const prep = database.prepare('INSERT INTO accesslog (remoteaddr,remoteuser,time,method,url,protocol,httpversion,status,referer,useragent) VALUES (?,?,?,?,?,?,?,?,?,?)');
-
-    const run = prep.run(logdata.remoteaddr,logdata.remoteuser, logdata.time, logdata.method,logdata.url,logdata.protocol,logdata.httpversion, logdata.status,logdata.referer, logdata.useragent);
-    next();
-
-});
 
 // WHEN DEBUG == TRUE.
 if (debug) {
