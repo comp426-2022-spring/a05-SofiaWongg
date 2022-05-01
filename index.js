@@ -42,6 +42,14 @@ const help = (`
     --help  Return this message and exit.
 `)
 
+// Define arguments and set values
+args["port"];
+args["debug"];
+args["log"];
+const port = args.port || process.env.PORT || 5555;
+const debug = (args.debug != "false");
+const log = (args.log != "false");
+
 if (args.help || args.h) {
   console.log(help);
   process.exit(0);
