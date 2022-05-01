@@ -69,12 +69,11 @@ const server = app.listen(port, () => {
 });
 
 
-// Tell STDOUT that the server is stopped (added)
-process.on('SIGINT', () => {
-  server.close(() => {
-  console.log('\nApp stopped.');
-});
-});
+// Serve static HTML files
+app.use(express.static('./public'));
+
+// Make Express use its own built-in body parser to handle JSON
+app.use(express.json());
 
 //added
 app.use( (req, res, next) => {
