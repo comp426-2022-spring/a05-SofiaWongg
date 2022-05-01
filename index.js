@@ -59,12 +59,120 @@ const flip_many = '';
 const server = app.listen(port, () => {
   console.log("Server running on port %PORT%".replace("%PORT%",port))
 });
+
+
 // Tell STDOUT that the server is stopped (added)
 process.on('SIGINT', () => {
   server.close(() => {
   console.log('\nApp stopped.');
 });
 });
+
+//added
+app.use( (req, res, next) => {
+  // adding in database (log)
+  let logdata = {
+      remoteaddr: req.ip,
+      remoteuser: req.user,
+      time: Date.now(),
+      method: req.method,
+      url: req.url,
+      protocol: req.protocol,
+      httpversion: req.httpVersion,
+      status: res.statusCode,
+      referer: req.headers['referer'],
+      useragent: req.headers['user-agent']
+  };
+
+    console.log(logdata);
+
+    const stmt = database.prepare('INSERT INTO accesslog (remoteaddr,remoteuser,time,method,url,protocol,httpversion,status,referer,useragent) VALUES (?,?,?,?,?,?,?,?,?,?)');
+    const run = stmt.run(logdata.remoteaddr,logdata.remoteuser, logdata.time, logdata.method,logdata.url,logdata.protocol,logdata.httpversion, logdata.status,logdata.referer, logdata.useragent);
+    next();
+
+});
+
+// Check endpoint
+app.get('/app/', (req, res) => {
+  // Respond with status 200
+      res.statusCode = 200;
+  // Respond with status message "OK"
+      res.statusMessage = 'OK';
+      res.writeHead(res.statusCode, { 'Content-Type' : 'text/plain' });
+      res.end(res.statusCode+ ' ' +res.statusMessage)
+});
+
+
+//debug end 
+//maybe add a try/catch
+if (args.debug) {
+  app.get('/app/log/access', (req, res) =>{
+      const stmt = db.prepare("Select * FROM accesslog").all();
+      res.status(200).json(stmt);
+  });
+
+
+  app.get("/app/error", (req, res) => {
+    res.status(500);
+      throw new Error("Error Test Successful");
+  })
+}
+
+if (log) {
+  // Use morgan for logging to files
+  const logdir = './log/';
+
+  if (!fs.existsSync(logdir)){
+      fs.mkdirSync(logdir);
+  }
+  // Create a write stream to append to an access.log file
+      const accessLog = fs.createWriteStream( logdir+'access.log', { flags: 'a' });
+  // Set up the access logging middleware
+      app.use(morgan('combined', { stream: accessLog }));
+} else {
+  console.log("NOTICE: not creating file access.log");
+}
+
+
+// Multiple flips endpoint
+app.post('/app/flip/coins/', (req, res, next) => {
+  var num = parseInt(req.body.number);
+  var flips = coinFlips(num);
+  var count = countFlips(flips);
+  var out = {raw: flips, summary: count};
+
+  res.status(200).json(out);
+});
+
+// Single flip endpoint
+app.post('/app/flip/', (req, res, next) => {
+const result = coinFlip();
+  const out = {flip: result};
+
+  res.status(200).json(out);
+});
+
+// Guess flip endpoint
+app.post('/app/flip/call/', (req, res, next) => {
+  const call = req.body.guess;
+  const out = flipACoin(call);
+
+  res.status(200).json(out);
+});
+
+// Default endpoint
+app.use(function(req, res){
+  res.status(404).send('404 NOT FOUND' + req.url);
+});
+
+
+
+
+
+
+
+
+
 
 
 //for static html files
@@ -103,29 +211,6 @@ if (args.log == 'false') { //added from profs code
 //   app.use(morgan('combined', { stream: access_log }));
 // }
 
-//added
-app.use( (req, res, next) => {
-  // adding in database (log)
-  let logdata = {
-      remoteaddr: req.ip,
-      remoteuser: req.user,
-      time: Date.now(),
-      method: req.method,
-      url: req.url,
-      protocol: req.protocol,
-      httpversion: req.httpVersion,
-      status: res.statusCode,
-      referer: req.headers['referer'],
-      useragent: req.headers['user-agent']
-  };
-
-    console.log(logdata);
-
-    const stmt = database.prepare('INSERT INTO accesslog (remoteaddr,remoteuser,time,method,url,protocol,httpversion,status,referer,useragent) VALUES (?,?,?,?,?,?,?,?,?,?)');
-    const info = stmt.run(logdata.remoteaddr,logdata.remoteuser, logdata.time, logdata.method,logdata.url,logdata.protocol,logdata.httpversion, logdata.status,logdata.referer, logdata.useragent);
-    next();
-
-});
 
 //coin functions at end of doc
 
@@ -284,15 +369,7 @@ app.get('/app', (req, res)=>{
   })
   
   //added endpoint:
-  if (args.debug) {
-      app.get('/app/log/access', (req, res) =>{
-          const stmt = db.prepare("Select * FROM accesslog").all();
-          res.status(200).json(stmt);
-      });
-      app.get("/app/error", (req, res) => {
-          throw new Error("Error Test Successful");
-      })
-  }
+ 
   
   app.use(function(req, res) {
     res.status(404).end("Endpoint does not exist")
