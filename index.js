@@ -62,7 +62,7 @@ const flip_many = '';
 
 // Start server
 const server = app.listen(port, () => {
-  console.log("Server running on port %PORT%".replace("%PORT%",port))
+  console.log('App listening on port %PORT%'.replace('%PORT%',port))
 });
 
 
@@ -86,9 +86,9 @@ app.use( (req, res, next) => {
       status: res.statusCode,
       referer: req.headers['referer'],
       useragent: req.headers['user-agent']
-  };
+  }
 
-    console.log(logdata);
+    //console.log(logdata);
 
     const stmt = database.prepare('INSERT INTO accesslog (remoteaddr,remoteuser,time,method,url,protocol,httpversion,status,referer,useragent) VALUES (?,?,?,?,?,?,?,?,?,?)');
     const run = stmt.run(logdata.remoteaddr,logdata.remoteuser, logdata.time, logdata.method,logdata.url,logdata.protocol,logdata.httpversion, logdata.status,logdata.referer, logdata.useragent);
@@ -109,10 +109,16 @@ app.get('/app/', (req, res) => {
 
 //debug end 
 //maybe add a try/catch
-if (args.debug) {
+if (debug) {
   app.get('/app/log/access', (req, res) =>{
+    try{
       const stmt = db.prepare("Select * FROM accesslog").all();
       res.status(200).json(stmt);
+    } 
+    catch {
+      console.error(e);
+  }
+      
   });
 
 
@@ -123,15 +129,15 @@ if (args.debug) {
 }
 
 if (log) {
-  // Use morgan for logging to files
+  // Use morgan for files
   const logdir = './log/';
 
   if (!fs.existsSync(logdir)){
       fs.mkdirSync(logdir);
   }
-  // Create a write stream to append to an access.log file
+  // Create a write stream log file
       const accessLog = fs.createWriteStream( logdir+'access.log', { flags: 'a' });
-  // Set up the access logging middleware
+  // Set up  middleware
       app.use(morgan('combined', { stream: accessLog }));
 } else {
   console.log("NOTICE: not creating file access.log");
