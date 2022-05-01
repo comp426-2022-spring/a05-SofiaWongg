@@ -18,11 +18,6 @@ const morgan = require('morgan')
 const logdb = require("./src/services/database.js")
 
 
-
-// Define coin_routes
-const coin_router = require('./src/routes/coin_routes'); //-nu
-
-
 //storing help options
 const help = (`
     server.js [options]
