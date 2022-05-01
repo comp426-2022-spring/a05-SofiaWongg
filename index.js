@@ -4,9 +4,6 @@
 const args = require('minimist')(process.argv.slice(2));
 
 
-
-const cors = require('cors') //maybe move later after app.use states -nu
-
 //require express
 var express = require('express');
 var app = express();
